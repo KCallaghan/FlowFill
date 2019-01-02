@@ -311,8 +311,8 @@ integer*8 :: ntotal
 
 real :: diff_total,maxdiff,water,water_threshold,depression_threshold,starting_water, start, finish ,time_increment,y
 
-character*20 :: surfdatadir,time_start,output_string
-character*100 :: filetopo,filemask
+character*20 :: surfdatadir,time_start
+character*100 :: filetopo,filemask,output_string
 
 real,allocatable,dimension(:,:) :: topo,h,hold,diff,topo_read,h_values,&
 hz_read,h_read,hold_read,mask,mask_read, arr,topo_import,mask_import,add,hz_values
@@ -376,7 +376,7 @@ n3 = 600!1125!900!416          !number of rows in the topography. Fortran thinks
 time_increment = 0.0
 !time_start  = '15_m'  !file name prefix
 surfdatadir = 'Sangamon_15_m'   !file where your topography data and if used, mask data is stored
-output_string = '_text_output.txt'  
+output_string = '_'//trim(my_name)//'m_runoff_text_output.txt'  
 open (15,file=trim(surfdatadir)//trim(output_string)) !creating a text file to store the values of iterations etc
 
 
@@ -1109,4 +1109,5 @@ end program surface_water
 
 
 !********************************************************************************************************
+
 

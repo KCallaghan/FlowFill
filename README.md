@@ -9,8 +9,8 @@ This code may only work on UNIX-based systems.
 Please contact us if you have questions or suggestions! 
 
 ## Required data inputs
-The only required data file is topography in a .nc (NetCDF) format. 
-Name files as:
+The only required data file is topography in a .nc (NetCDF) format. The filename is specified at runtime. The NetCDF file should include latitude, longitude, and elevation in a dimension called 'value'. 
+
 
 ## Compilation
 
@@ -28,7 +28,9 @@ To use this compilation code on your computer, change the following to the appro
 ## Running the code
 
 This code will run in parallel and requires a minimum of 3 processors.
+
 Runoff and the topography file need to be specified at runtime. Note that these must be specified in the correct order, first runoff and then the topography file.
+
 An example of how to run this code with 1 m runoff, an input topography file called topo.nc, and using 4 processors is:
 
 ```

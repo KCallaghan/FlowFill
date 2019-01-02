@@ -32,8 +32,8 @@ An example of how to run this code with 1 m runoff and using 4 processors is:
 
 ```
  mpirun -np 4 ./Sangamon_test --runoff 1
- 
  ```
+ 
 ## Outputs
 
 The program outputs two binary (.dat) files:

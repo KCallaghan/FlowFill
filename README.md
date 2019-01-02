@@ -17,7 +17,7 @@ This code uses MPI and NetCDF libraries. Compile and run using MPI.
 An example of compilation is:
 
 ```
-mpif90 -O3 surface_water.f90 -o Your_output -I/usr/include -L/usr/lib/x86_64-linux-gnu/ -lnetcdff -ffast-math -march=native -mtune=native
+mpif90 -O3 FlowFill.f90 -o Your_compiled_code -I/usr/include -L/usr/lib/x86_64-linux-gnu/ -lnetcdff -ffast-math -march=native -mtune=native
 ```
 To use this compilation code on your computer, change the following to the appropriate paths:
 
@@ -31,7 +31,7 @@ The runoff to be applied to the landscape should be specified at runtime using f
 An example of how to run this code with 1 m runoff and using 4 processors is:
 
 ```
- mpirun -np 4 ./Sangamon_test --runoff 1
+ mpirun -np 4 ./Your_compiled_code --runoff 1
  ```
  
 ## Outputs

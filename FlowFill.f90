@@ -345,7 +345,7 @@ integer,allocatable :: domblock(:),domblocksmall(:),nini(:),nend(:)
 integer::narg,cptArg !#of arg & counter of arg
 character(len=20)::name,my_name !Arg name
 
-logical ::supplied_runoff=.false.
+logical ::supplied_runoff=.false.,supplied_file=.false.
 
 
 !INITIALISE MPI: ********************************************************************************************************************
@@ -366,23 +366,33 @@ end if
  if(narg>0)then
 !loop across options
  do cptArg=1,narg
+
+
+
   call get_command_argument(cptArg,name)
-   select case(adjustl(name))
-    case("--runoff")
-     supplied_runoff = .TRUE.
-    case default
-      if(supplied_runoff)then
+ 
+     
+
+      if(cptArg==1)then
         my_name = adjustl(name)
         Read( my_name , '(f5.0)' )  y      ! reads the value from string and assigns it to y
-        starting_water=y
-        print *, "you used a runoff value of ",starting_water
-      else
-        print *,"you didn't supply a runoff value!"
+        starting_water=y        
+     
+      elseif(cptArg==2)then
+        filetopo = adjustl(name)
+      
       endif
 
-   end select
  end do
  end if
+
+
+  print *, "you used a runoff value of ",starting_water
+
+  print *,"your supplied topography is in file ",filetopo
+
+
+
 
 
 call cpu_time(start)
@@ -392,7 +402,7 @@ n2 = 497!932!600!469            !number of columns in the topography. Fortran th
 n3 = 600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
 time_increment = 0.0
 !time_start  = '15_m'  !file name prefix
-surfdatadir = 'Sangamon_15_m'   !file where your topography data and if used, mask data is stored
+!surfdatadir = 'Sangamon_15_m'   !file where your topography data and if used, mask data is stored
 output_string = '_'//trim(my_name)//'m_runoff_text_output.txt'  
 open (15,file=trim(surfdatadir)//trim(output_string)) !creating a text file to store the values of iterations etc
 
@@ -412,7 +422,7 @@ depression_threshold = water_threshold
 converged  = 0
 counter    = 0
 
-filetopo = trim(surfdatadir)//'.nc'
+!filetopo = surfd!trim(surfdatadir)//'.nc'
 
 write(15,*) 'filetopo ',filetopo 
 print *, 'filetopo ',filetopo 

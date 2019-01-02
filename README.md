@@ -1,6 +1,6 @@
 # FlowFill
 
-***FlowFill is a Fortran tool to fill depressions in a landscape given a starting runoff value.***
+***FlowFill is a Fortran tool to fill or partially fill depressions in a landscape given a starting runoff value, in a way that conserves water mass.***
 
 This algorithm is intended for pre-processing DEMs prior to running flow routing algorithms. Rather than indiscriminately filling all depressions, a starting runoff value is specified and depressions are fully or partially filled in a way that conserves water mass. Terrestrial water storage can also be assessed. 
 

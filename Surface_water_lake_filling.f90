@@ -1,3 +1,21 @@
+! FlowFill fills or partially fills depressions in a landscape using a prescribed runoff value in a way that conserves water mass.
+
+! Copyright (C) 2019 Kerry Callaghan
+
+! This program is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+
+! This program is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+! GNU General Public License for more details.
+
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 !cleaning up this version ahead of using for surface-water focussed paper. 
 !This version is for the stormwater style runs, runoff only, same value everywhere. Code for water balance style runs (E, P-ET) still needs to be added. 
 !This version of the code sorts cells by priority before moving water. This is significantly faster than just running through the array start to finish. 
@@ -53,7 +71,6 @@ subroutine Merge(A,NA,B,NB,C,NC)
   return
 
 end subroutine merge
-
 
 !used to sort the array from min to max for more efficient processing:
 

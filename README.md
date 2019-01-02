@@ -10,6 +10,7 @@ Please contact us if you have questions or suggestions!
 
 ## Required data inputs
 The only required data file is topography in a .nc (NetCDF) format. 
+Name files as:
 
 ## Compilation
 
@@ -27,11 +28,11 @@ To use this compilation code on your computer, change the following to the appro
 ## Running the code
 
 This code will run in parallel and requires a minimum of 3 processors.
-The runoff to be applied to the landscape should be specified at runtime using flag --runoff. 
-An example of how to run this code with 1 m runoff and using 4 processors is:
+Runoff and the topography file need to be specified at runtime. Note that these must be specified in the correct order, first runoff and then the topography file.
+An example of how to run this code with 1 m runoff, an input topography file called topo.nc, and using 4 processors is:
 
 ```
- mpirun -np 4 ./Your_compiled_code --runoff 1
+ mpirun -np 4 ./Your_compiled_code  1 topo.nc
  ```
  
 ## Outputs

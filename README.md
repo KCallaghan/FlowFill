@@ -9,7 +9,9 @@ This code may only work on UNIX-based systems.
 Please contact us if you have questions or suggestions! 
 
 ## Required data inputs
-The only required data file is topography in a .nc (NetCDF) format. The filename is specified at runtime. The NetCDF file should include latitude, longitude, and elevation in a dimension called 'value'. 
+The only required data file is topography in a .nc (NetCDF) format. The filename is specified at runtime. The NetCDF file should have three variables: 'lat' for latitude, 'lon' for longitude, and 'value' for elevation.
+
+Actual latitude and longitude are not required: define any rectangular grid. Note that this algorithm does not internally account for changing cell size in a geographic coordinate system. 
 
 
 ## Compilation

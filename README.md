@@ -38,4 +38,4 @@ An example of how to run this code with 1 m runoff and using 4 processors is:
 
 The program outputs two binary (.dat) files:
 1. Filled landscape (i.e. original topography, plus water in depressions)
-2. Thickness of water ((i.e. water stored in depressions alone)
+2. Thickness of water (i.e. water stored in depressions alone)

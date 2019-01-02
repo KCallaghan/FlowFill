@@ -42,5 +42,7 @@ An example of how to run this code with 1 m runoff, an input topography file cal
 ## Outputs
 
 The program outputs two binary (.dat) files:
-1. Filled landscape (i.e. original topography, plus water in depressions)
-2. Thickness of water (i.e. water stored in depressions alone)
+1. Filled landscape (i.e. original topography, plus depth of water in depressions)
+2. Thickness of water (i.e. depth of water stored in depressions alone)
+
+An additional output is a text file with runtimes and amounts of water still moving in the landscape every 500 iterations, along with other status messages. 

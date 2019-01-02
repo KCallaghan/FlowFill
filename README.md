@@ -8,10 +8,10 @@ This code may only work on UNIX-based systems.
 
 Please contact us if you have questions or suggestions! 
 
-##Required data inputs
+## Required data inputs
 The only required data file is topography in a .nc (NetCDF) format. 
 
-##Compilation
+## Compilation
 
 This code uses MPI and NetCDF libraries. Compile and run using MPI. 
 An example of compilation is:
@@ -24,7 +24,7 @@ To use this compilation code on your computer, change the following to the appro
 * `-I/usr/include`
 * `-L/usr/lib/x86_64-linux-gnu/`
 
-##Running the code
+## Running the code
 
 This code will run in parallel and requires a minimum of 3 processors.
 The runoff to be applied to the landscape should be specified at runtime using flag --runoff. 
@@ -34,7 +34,7 @@ An example of how to run this code with 1 m runoff and using 4 processors is:
  mpirun -np 4 ./Sangamon_test --runoff 1
  
  ```
-##Outputs
+## Outputs
 
 The program outputs two binary (.dat) files:
 1. Filled landscape (i.e. original topography, plus water in depressions)

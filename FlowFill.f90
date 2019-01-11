@@ -323,18 +323,17 @@ implicit none
 
 integer   :: i,j,n2,n3,ncid,varid,error,iret,col,row,converged,counter,nmax,n, Merge_size
 integer   :: ierr,pid,numtasks,tasktype,status(MPI_STATUS_SIZE),rc,columntype,columntypeint
-integer   :: mask_supplied,target_cell(3),depressions,iters 
+integer   :: mask_supplied,target_cell(3),depressions,iters ,my_current_diff
 integer*8 :: ntotal
 
 real :: diff_total,maxdiff,water,water_threshold,depression_threshold,starting_water, start, finish ,time_increment,y
 
-character*20 :: surfdatadir,time_start
-character*100 :: filetopo,filemask,output_string
+character*100 :: filetopo,filemask,output_string,outfile,waterfile
 
 real,allocatable,dimension(:,:) :: topo,h,hold,diff,topo_read,h_values,&
 hz_read,h_read,hold_read,mask,mask_read, arr,topo_import,mask_import,add,hz_values
 
-real,allocatable,dimension(:) :: hz_1D
+real,allocatable,dimension(:) :: hz_1D,threshold_array
 
 integer,allocatable,dimension(:)  :: T
 
@@ -343,9 +342,9 @@ REAL,PARAMETER :: UNDEF = -1.0E+7
 integer,allocatable :: domblock(:),domblocksmall(:),nini(:),nend(:)
 
 integer::narg,cptArg !#of arg & counter of arg
-character(len=20)::name,my_name !Arg name
+character(len=100)::name,my_name !Arg name
 
-logical ::supplied_runoff=.false.,supplied_file=.false.
+logical ::supplied_runoff=.false.,supplied_file=.false.,ready_to_exit=.false.
 
 
 !INITIALISE MPI: ********************************************************************************************************************
@@ -380,6 +379,10 @@ end if
      
       elseif(cptArg==2)then
         filetopo = adjustl(name)
+
+      elseif(cptArg==3)then
+        outfile = trim(adjustl(name))//'.dat'
+        waterfile = trim(adjustl(name))//'_water.dat'
       
       endif
 
@@ -398,13 +401,11 @@ end if
 call cpu_time(start)
 
 
-n2 = 497!932!600!469            !number of columns in the topography. Fortran thinks these are ROWS
-n3 = 600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
+n2 = 586!497!932!600!469            !number of columns in the topography. Fortran thinks these are ROWS
+n3 = 1089!600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
 time_increment = 0.0
-!time_start  = '15_m'  !file name prefix
-!surfdatadir = 'Sangamon_15_m'   !file where your topography data and if used, mask data is stored
 output_string = '_'//trim(my_name)//'m_runoff_text_output.txt'  
-open (15,file=trim(surfdatadir)//trim(output_string)) !creating a text file to store the values of iterations etc
+open (15,file='Argentina_text_output_'//trim(output_string)) !creating a text file to store the values of iterations etc
 
 
 mask_supplied = 0 !change to 1 if you are including a mask with ocean cells. 
@@ -412,6 +413,10 @@ mask_supplied = 0 !change to 1 if you are including a mask with ocean cells.
 !starting_water = 0.2
 
 water_threshold = starting_water/10000.  
+
+
+allocate(threshold_array(2000))
+threshold_array(:) = 100.
 
 depression_threshold = water_threshold
 
@@ -421,14 +426,14 @@ depression_threshold = water_threshold
  
 converged  = 0
 counter    = 0
+my_current_diff = 1
 
-!filetopo = surfd!trim(surfdatadir)//'.nc'
 
 write(15,*) 'filetopo ',filetopo 
 print *, 'filetopo ',filetopo 
 
 if(mask_supplied .eq. 1) then
-  filemask = trim(surfdatadir)//'_mask.nc'
+  filemask = trim(my_name)//'_mask.nc'
 endif
 
 
@@ -634,7 +639,7 @@ endif
 
 !done with data setup ************************************************************************************************  
 
-diff_total = 0
+diff_total = 0.
 
 
 if(pid.eq.0)then
@@ -663,10 +668,31 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
   counter = counter + 1
 
 
-  if(counter .gt. 10 .and. diff_total.lt. water_threshold)then      !select threshold here. Consider a better way to threshold or a max number of iterations if it isn't reaching that. BUT note it'll sometimes level out for a while and then still be able to take a big jump to improvement, so it's not so simple as just looking for when it levels out! 
-    write(15,*)'success',diff_total
-    converged = 1
+!  if(counter .gt. 10 .and. diff_total.lt. water_threshold)then      !select threshold here. Consider a better way to threshold or a max number of iterations if it isn't reaching that. BUT note it'll sometimes level out for a while and then still be able to take a big jump to improvement, so it's not so simple as just looking for when it levels out! 
+!    write(15,*)'success',diff_total
+!    converged = 1
+!  endif
+
+  if (mod(counter,500) .eq. 0)then
+    ready_to_exit = .true.
+    do n=1,2000
+      if(abs(diff_total - threshold_array(n)) .gt. 0.005)then
+        ready_to_exit = .false.
+      endif
+    end do
+    if(ready_to_exit .eqv. .true.)then
+      print *,'checking if ready_to_exit',ready_to_exit
+
+    if(diff_total < starting_water)then 
+      print *,diff_total
+      print *, threshold_array
+            converged = 1
+
+    endif 
+
+    endif
   endif
+
 
   if(counter .eq. 1000000)then               !unlikely to ever reach the selected threshold, almost certainly in an endless loop by this stage. 
     write(15,*)'timed out',diff_total
@@ -690,7 +716,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
       end do
 
 
-      open(23,file = 'Argentina_0_point_2m_a.dat',form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
+      open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
       write(15,*)'the file has been opened'
       write(23,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
       write(15,*)'the file has been written'
@@ -954,6 +980,16 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
   endif
 
   call MPI_ALLREDUCE(maxdiff,diff_total,1,MPI_REAL,mpi_max,MPI_COMM_WORLD,ierr)  !to get overall threshold
+
+  if(mod(counter,10).eq.0)then
+
+    threshold_array(my_current_diff) = diff_total
+
+    my_current_diff = my_current_diff + 1
+    if(my_current_diff == 2001) then
+      my_current_diff = 1
+    endif
+  endif
    
 end do MAIN
 
@@ -1063,7 +1099,7 @@ write(15,*)'this is the final nmax',nmax
 if (pid .eq. 0) then
   write(15,*)'done'
    
-  open(23,file = 'Argentina_0_point_2m_a.dat',form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
+  open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
   write(15,*)'the file has been opened'
   write(23,rec=1)((hz_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
   write(15,*)'the file has been written'
@@ -1072,11 +1108,11 @@ if (pid .eq. 0) then
 
 
    
-  open(23,file = 'Argentina_water_0_point_2m_a.dat',form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
+  open(25,file = waterfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
   write(15,*)'the file has been opened'
-  write(23,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
+  write(25,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
   write(15,*)'the file has been written'
-  close(23)
+  close(25)
   write(15,*)'written to file',pid
 
 

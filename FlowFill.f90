@@ -197,20 +197,66 @@ end subroutine check_err
 
 !get steepest slope direction subroutine:
 
-subroutine steepest(x,y,my_val,up_val,down_val,left_val,right_val,target_cell)
+subroutine steepest(x,y,my_val,N_val,NE_val,E_val,SE_val,S_val,SW_val,W_val,NW_val,target_cell)
 
   integer, intent(in) :: x,y
   integer                :: target_cell(3)
-  real   , intent(in) :: my_val,up_val,down_val,left_val,right_val
-  real                :: upvalue,downvalue,leftvalue,rightvalue
+  real   , intent(in) :: my_val,N_val,S_val,E_val,W_val, NE_val, SE_val,NW_val,SW_val
+  !real                :: N,S,E,W,NE,NW,SE,SW
+  real,allocatable,dimension(:) :: direction_array, x_array, y_array,test_arr
 
-  upvalue    = my_val - up_val
-  downvalue  = my_val - down_val
-  leftvalue  = my_val - left_val
-  rightvalue = my_val - right_val
+
+
+ allocate(test_arr(8))
+  test_arr(:) = my_val
+  test_arr(1) = N_val
+  test_arr(2) = NE_val
+  test_arr(3) = E_val
+  test_arr(4) = SE_val
+  test_arr(5) = S_val
+  test_arr(6) = SW_val
+  test_arr(7) = W_val
+  test_arr(8) = NW_val
+
+
+  allocate(direction_array(8))
+  direction_array(:) = my_val
+  direction_array(1) = my_val - N_val
+  direction_array(2) = my_val - NE_val
+  direction_array(3) = my_val - E_val
+  direction_array(4) = my_val - SE_val
+  direction_array(5) = my_val - S_val
+  direction_array(6) = my_val - SW_val
+  direction_array(7) = my_val - W_val
+  direction_array(8) = my_val - NW_val
+
+  allocate(x_array(8))
+  x_array(1) = x-1
+  x_array(2) = x-1
+  x_array(3) = x
+  x_array(4) = x+1
+  x_array(5) = x+1
+  x_array(6) = x+1
+  x_array(7) = x
+  x_array(8) = x-1
+
+  allocate(y_array(8))
+  y_array(1) = y
+  y_array(2) = y+1
+  y_array(3) = y+1
+  y_array(4) = y+1
+  y_array(5) = y
+  y_array(6) = y-1
+  y_array(7) = y-1
+  y_array(8) = y-1
+
+
+
 
   
-  if(max(upvalue,downvalue,leftvalue,rightvalue) .le.0) then
+  if(max(direction_array(1),direction_array(2),direction_array(3),direction_array(4),&
+    direction_array(5),direction_array(6),direction_array(7),direction_array(8)) .le.0) then
+  !  print *,'no lower cells'
     target_cell(1) = -100
     target_cell(2) = -100
     target_cell(3) = -100
@@ -218,62 +264,38 @@ subroutine steepest(x,y,my_val,up_val,down_val,left_val,right_val,target_cell)
     return
   endif
 
+  do n= 1,8
+    if(max(direction_array(1),direction_array(2),direction_array(3),&
+      direction_array(4),direction_array(5),direction_array(6),direction_array(7),&
+      direction_array(8)) .eq. direction_array(n)) then
+   !   print *,'lower cell',my_val,' ',test_arr(n),' ',direction_array(n)
+      target_cell(1) = x_array(n)
+      target_cell(2) = y_array(n)
+    endif
+  end do 
 
- ! if (x .eq. 2) then
-  !  upvalue = -5
-  !elseif (x.eq. n2+1) then 
-   ! downvalue = -5
-  !endif
-  !if(y.eq.2)then
-   ! leftvalue = -5
-  !elseif(y.eq.nmax.and.pid.eq.numtasks-1) then
-   ! rightvalue = -5
-  !endif
-
- ! if(x.eq.2 .or.x.eq.n2+1 .or. y.eq.2 .or. (y.eq. nmax .and. pid.eq.numtasks-1))then
-  !  if(max(upvalue,downvalue,leftvalue,rightvalue) .le.0) then
-   !   if (x .eq. 2) then
-    !    upvalue = 5
-     ! elseif (x.eq. n2+1) then 
-      !  downvalue = 5
-   !   endif
-    !  if(y.eq.2)then
-     !   leftvalue = 5
-   !   elseif(y.eq.nmax.and.pid.eq.numtasks-1) then
-    !    rightvalue = 5
-     ! endif
-   ! endif
-  !endif
-
-
-  if(max(upvalue,downvalue,leftvalue,rightvalue) .eq.upvalue)then
-    target_cell(1) = x-1 
-    target_cell(2) = y
-  elseif(max(upvalue,downvalue,leftvalue,rightvalue) .eq.downvalue)then
-    target_cell(1) = x+1 
-    target_cell(2) = y
-  elseif(max(upvalue,downvalue,leftvalue,rightvalue) .eq.leftvalue)then
-    target_cell(1) = x
-    target_cell(2) = y-1
-  elseif(max(upvalue,downvalue,leftvalue,rightvalue) .eq.rightvalue)then
-    target_cell(1) = x
-    target_cell(2) = y+1
-  endif
 
   target_cell(3) = 1
 
+  equal_count = 0
+
+!  do n=1,8
+  
+!  end do
+
+
   !note that this may still have more than correct water moving in some direction since the cell it has moved to, might be processed again before this cell is processed again. Ideas to correct this?
-  if(upvalue .eq. downvalue .or. upvalue.eq.leftvalue .or.upvalue.eq.rightvalue &
-    .or.downvalue.eq.leftvalue .or.downvalue .eq. rightvalue .or. leftvalue.eq.rightvalue) then
-    if(upvalue.eq.downvalue .and. upvalue.eq.leftvalue .and. upvalue.eq.rightvalue) then
-      target_cell(3) = 4
-    elseif(upvalue.eq.downvalue .and. upvalue.eq.leftvalue .or.upvalue.eq.downvalue &
-      .and.upvalue.eq.rightvalue .or. downvalue.eq.leftvalue.and.downvalue.eq.rightvalue) then
-      target_cell(3) = 3 
-    else
-      target_cell(3) = 2
-    endif
-  endif
+ ! if(upvalue .eq. downvalue .or. upvalue.eq.leftvalue .or.upvalue.eq.rightvalue &
+  !  .or.downvalue.eq.leftvalue .or.downvalue .eq. rightvalue .or. leftvalue.eq.rightvalue) then
+   ! if(upvalue.eq.downvalue .and. upvalue.eq.leftvalue .and. upvalue.eq.rightvalue) then
+    !  target_cell(3) = 4
+   ! elseif(upvalue.eq.downvalue .and. upvalue.eq.leftvalue .or.upvalue.eq.downvalue &
+    !  .and.upvalue.eq.rightvalue .or. downvalue.eq.leftvalue.and.downvalue.eq.rightvalue) then
+    !  target_cell(3) = 3 
+   ! else
+    !  target_cell(3) = 2
+  !  endif
+ ! endif
 
   return
 
@@ -327,6 +349,7 @@ integer   :: mask_supplied,target_cell(3),depressions,iters ,my_current_diff
 integer*8 :: ntotal
 
 real :: diff_total,maxdiff,water,water_threshold,depression_threshold,starting_water, start, finish ,time_increment,y
+real :: total_adjust,max_adjust
 
 character*100 :: filetopo,filemask,output_string,outfile,waterfile
 
@@ -401,8 +424,8 @@ end if
 call cpu_time(start)
 
 
-n2 = 586!497!932!600!469            !number of columns in the topography. Fortran thinks these are ROWS
-n3 = 1089!600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
+n2 = 497!932!600!469            !number of columns in the topography. Fortran thinks these are ROWS
+n3 = 600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
 time_increment = 0.0
 output_string = '_'//trim(my_name)//'m_runoff_text_output.txt'  
 open (15,file='Argentina_text_output_'//trim(output_string)) !creating a text file to store the values of iterations etc
@@ -441,8 +464,6 @@ endif
 
 call MPI_COMM_RANK(MPI_COMM_WORLD,pid,ierr)
 call MPI_COMM_SIZE(MPI_COMM_WORLD,numtasks,ierr)
-
-write(15,*)'this is my next write'!Number of tasks=',numtasks,'My rank=',pid
 write(15,*)"you used a runoff value of ",starting_water
 
 write(15,*) 'Number of tasks=',numtasks,'My rank=',pid
@@ -799,23 +820,35 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
 
         else
           
+
+
+   
           call steepest(row,col,hz_read(row,col),hz_read(row-1,col),&
-             hz_read(row+1,col),hz_read(row,col-1),hz_read(row,col+1),target_cell)
+             hz_read(row-1,col+1),hz_read(row,col+1),hz_read(row+1,col+1),&
+             hz_read(row+1,col),hz_read(row+1,col-1),hz_read(row,col-1),&
+             hz_read(row-1,col-1),target_cell)
 
           if(target_cell(1).eq.-100)then
             
             CYCLE
           endif
 
-          call water_to_move(target_cell(3),hz_read(row,col),hz_read(target_cell(1),target_cell(2)),&
-               h_read(row,col),water)
+         ! call water_to_move(target_cell(3),hz_read(row,col),hz_read(target_cell(1),target_cell(2)),&
+         !      h_read(row,col),water)
+         water = min(h_read(row,col), (hz_read(row,col) - hz_read(target_cell(1),target_cell(2)))/2)
         endif
 
         if(h_read(row,col) - water .lt. 0) then  !this should never happen 
+    !      print *,'first if'
           water = h_read(row,col)
         endif
         if(hz_read(row,col)-water .lt. topo_read(row,col))then  !this should never happen 
+     !     print *,'second if'
           water = hz_read(row,col)-topo_read(row,col)
+        endif 
+
+        if(water .lt. 0)then
+      !    print *,'we have negative water',water,' ',h_read(row,col),' ',hz_read(row,col),' ',hz_read(target_cell(1),target_cell(2))
         endif 
           
   
@@ -823,13 +856,31 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
         h_read(target_cell(1),target_cell(2)) = h_read(target_cell(1),target_cell(2)) + water
         hz_read(row,col) = hz_read(row,col) - water
         hz_read(target_cell(1),target_cell(2)) = hz_read(target_cell(1),target_cell(2)) + water
-     
+
+ !       if(h_read(row,col) .lt. 0 .or. h_read(target_cell(1),target_cell(2)) .lt. 0 ) then
+  !        print *, 'negative water'
+   !     endif
+
+    !    if(hz_read(row,col) .lt. topo_read(row,col) .or. hz_read(target_cell(1),target_cell(2))&
+     !    .lt. topo_read(target_cell(1),target_cell(2)) )then
+      !    print *, 'negative topo'
+       ! endif
+        
        
         if(mask_read(row,col) .eq. 0) then !h is 0 over the ocean
           hz_read(row,col) = topo_read(row,col)
           h_read(row,col) = 0
           CYCLE
         endif
+
+        if(hz_read(row,col) .lt. topo_read(row,col))then
+          print *, 'hz_read has become an impossible value',water," ",hz_read(row,col)," ",topo(row,col)
+        endif
+
+        if(hz_read(row,col) .lt. 0)then
+          print *, 'hz_read has become a negative value',water," ",hz_read(row,col)," ",topo(row,col)
+        endif
+
 
       end do ROWS1
     end do COLS1
@@ -892,8 +943,10 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
           if(h_read(row,col) .eq. 0) then !skip cells with no water
             CYCLE
           else
-            call steepest(row,col,hz_read(row,col),hz_read(row-1,col),&
-              hz_read(row+1,col),hz_read(row,col-1),hz_read(row,col+1),target_cell)
+           call steepest(row,col,hz_read(row,col),hz_read(row-1,col),&
+             hz_read(row-1,col+1),hz_read(row,col+1),hz_read(row+1,col+1),&
+             hz_read(row+1,col),hz_read(row+1,col-1),hz_read(row,col-1),&
+             hz_read(row-1,col-1),target_cell)
 
             if(target_cell(1).eq.-100)then
               CYCLE
@@ -1023,6 +1076,9 @@ endif
 !Adjacent lake cells may have an extremely small difference between them rather than perfectly flat water, which causes problems for flow routing. 
 !This looks for cells which are local depressions, and have neighbours containing water, and corrects this issue. 
 
+max_adjust = 0.
+total_adjust = 0.
+
 if(pid.eq.0)then
 
   allocate(add(n2+2,n3+2))
@@ -1049,19 +1105,19 @@ if(pid.eq.0)then
             CYCLE
 
           else         
-            if((hz_values(row,col+1)-hz_values(row,col)).lt.depression_threshold .and. h_values(row,col+1) .gt. 0) then  !if a neighbour has water, is less than some threshold above the cell, and is more than other neighbours
+            if(((hz_values(row,col+1)-hz_values(row,col)).lt.depression_threshold) .and. (h_values(row,col+1) .gt. 0)) then  !if a neighbour has water, is less than some threshold above the cell, and is more than other neighbours
               add(row,col) = hz_values(row,col+1)                                                                        !then record the neighbour's height for later 
             endif
-            if((hz_values(row,col-1)-hz_values(row,col)).lt.depression_threshold .and.hz_values(row,col-1) .gt. add(row,col) &  !check this for all four neighbours
-              .and. h_values(row,col-1) .gt.0) then
+            if(((hz_values(row,col-1)-hz_values(row,col)).lt.depression_threshold) .and. (hz_values(row,col-1) .gt. add(row,col)) &  !check this for all four neighbours
+              .and. (h_values(row,col-1) .gt.0)) then
               add(row,col) = hz_values(row,col-1)
             endif
-            if((hz_values(row-1,col)-hz_values(row,col)).lt.depression_threshold .and. hz_values(row-1,col) .gt. add(row,col) &
-              .and. h_values(row-1,col) .gt. 0) then
+            if(((hz_values(row-1,col)-hz_values(row,col)).lt.depression_threshold) .and. (hz_values(row-1,col) .gt. add(row,col)) &
+              .and. (h_values(row-1,col) .gt. 0)) then
               add(row,col) = hz_values(row-1,col)
             endif
-            if((hz_values(row+1,col)-hz_values(row,col)).lt.depression_threshold .and. hz_values(row+1,col) .gt. add(row,col) &
-              .and. h_values(row+1,col) .gt.0) then
+            if(((hz_values(row+1,col)-hz_values(row,col)).lt.depression_threshold) .and. (hz_values(row+1,col) .gt. add(row,col)) &
+              .and. (h_values(row+1,col) .gt.0)) then
               add(row,col) = hz_values(row+1,col)
             endif
           endif
@@ -1072,6 +1128,11 @@ if(pid.eq.0)then
     do col=2,n3 +1 
       do row=2,n2+1
         if(add(row,col).gt.hz_values(row,col))then    !if the add array has a higher neighbour for you 
+          if(add(row,col)-hz_values(row,col) .gt. max_adjust)then
+            max_adjust = add(row,col)-hz_values(row,col)
+          endif
+          total_adjust = total_adjust + (add(row,col)-hz_values(row,col))
+
           depressions = depressions + 1               !then you were a depression, get counted
           h_values(row,col) = h_values(row,col) + (add(row,col)-hz_values(row,col))  !change h_values as well for the next iteration (shouldn't matter, but just in case. And does matter if you want to look at the output for this layer)
           hz_values(row,col)= max(hz_values(row,col),add(row,col)) !we already know add is greater but checking again and only changing hz if add is greater
@@ -1084,6 +1145,10 @@ write(15,*)pid,'depressions',depressions
 
   end do
 endif
+
+print *, "the final max_adjust was ",max_adjust
+print *, "the final total_adjust was ",total_adjust
+
 
 
     write(15,*) '("Total Time = ",f6.3," seconds.")',finish-start

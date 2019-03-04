@@ -349,7 +349,7 @@ integer   :: mask_supplied,target_cell(3),depressions,iters ,my_current_diff
 integer*8 :: ntotal
 
 real :: diff_total,maxdiff,water,water_threshold,depression_threshold,starting_water, start, finish ,time_increment,y
-real :: total_adjust,max_adjust,diffsum,diffsum_total, thresh_mean
+real :: total_adjust,max_adjust,diffsum,diffsum_total, thresh_mean,user_selected_threshold
 
 character*100 :: filetopo,filemask,output_string,outfile,waterfile,textfile
 
@@ -392,7 +392,7 @@ end if
 
 
   call get_command_argument(cptArg,name)
- 
+print *,name 
      
 
       if(cptArg==1)then
@@ -404,6 +404,22 @@ end if
         filetopo = adjustl(name)
 
       elseif(cptArg==3)then
+        my_name = adjustl(name)
+        Read( my_name , '(f5.0)' )  y      ! reads the value from string and assigns it to y
+        n2=y        
+
+      elseif(cptArg==4)then
+        my_name = adjustl(name)
+        Read( my_name , '(f5.0)' )  y      ! reads the value from string and assigns it to y
+        n3=y        
+
+      elseif(cptArg==5)then
+        my_name = adjustl(name)
+        Read( my_name , '(f5.0)' )  y      ! reads the value from string and assigns it to y
+        user_selected_threshold=y        
+
+
+      elseif(cptArg==6)then
         outfile = trim(adjustl(name))//'.dat'
         waterfile = trim(adjustl(name))//'_water.dat'
         textfile = trim(adjustl(name))//'_text_output.txt'
@@ -425,8 +441,6 @@ end if
 call cpu_time(start)
 
 
-n2 = 497!932!600!469            !number of columns in the topography. Fortran thinks these are ROWS
-n3 = 600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
 time_increment = 0.0
 output_string = '_'//trim(my_name)//'m_runoff_text_output.txt'  
 open (15,file=textfile) !creating a text file to store the values of iterations etc
@@ -699,7 +713,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
   if (mod(counter,500) .eq. 0)then
     ready_to_exit = .true.
     do n=1,2000
-      if(abs(diff_total - threshold_array(n)) .gt. 0.001)then
+      if(abs(diff_total - threshold_array(n)) .gt. user_selected_threshold)then
         ready_to_exit = .false.
       endif
     end do

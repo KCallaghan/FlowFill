@@ -349,9 +349,9 @@ integer   :: mask_supplied,target_cell(3),depressions,iters ,my_current_diff
 integer*8 :: ntotal
 
 real :: diff_total,maxdiff,water,water_threshold,depression_threshold,starting_water, start, finish ,time_increment,y
-real :: total_adjust,max_adjust
+real :: total_adjust,max_adjust,diffsum,diffsum_total, thresh_mean
 
-character*100 :: filetopo,filemask,output_string,outfile,waterfile
+character*100 :: filetopo,filemask,output_string,outfile,waterfile,textfile
 
 real,allocatable,dimension(:,:) :: topo,h,hold,diff,topo_read,h_values,&
 hz_read,h_read,hold_read,mask,mask_read, arr,topo_import,mask_import,add,hz_values
@@ -406,6 +406,7 @@ end if
       elseif(cptArg==3)then
         outfile = trim(adjustl(name))//'.dat'
         waterfile = trim(adjustl(name))//'_water.dat'
+        textfile = trim(adjustl(name))//'_text_output.txt'
       
       endif
 
@@ -428,7 +429,7 @@ n2 = 497!932!600!469            !number of columns in the topography. Fortran th
 n3 = 600!1125!900!416          !number of rows in the topography. Fortran thinks these are COLUMNS.
 time_increment = 0.0
 output_string = '_'//trim(my_name)//'m_runoff_text_output.txt'  
-open (15,file='Argentina_text_output_'//trim(output_string)) !creating a text file to store the values of iterations etc
+open (15,file=textfile) !creating a text file to store the values of iterations etc
 
 
 mask_supplied = 0 !change to 1 if you are including a mask with ocean cells. 
@@ -450,6 +451,7 @@ depression_threshold = water_threshold
 converged  = 0
 counter    = 0
 my_current_diff = 1
+thresh_mean = 0
 
 
 write(15,*) 'filetopo ',filetopo 
@@ -697,19 +699,19 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
   if (mod(counter,500) .eq. 0)then
     ready_to_exit = .true.
     do n=1,2000
-      if(abs(diff_total - threshold_array(n)) .gt. 0.005)then
+      if(abs(diff_total - threshold_array(n)) .gt. 0.001)then
         ready_to_exit = .false.
       endif
     end do
     if(ready_to_exit .eqv. .true.)then
       print *,'checking if ready_to_exit',ready_to_exit
 
-    if(diff_total < starting_water)then 
-      print *,diff_total
-      print *, threshold_array
+      if(diff_total < starting_water)then 
+        print *,diff_total
+     ! print *, threshold_array
             converged = 1
 
-    endif 
+      endif 
 
     endif
   endif
@@ -725,7 +727,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
 
  
     if (mod(counter,500) .eq. 0) then       !Doing part-way filewrites. 
-    write(15,*)'counter',counter,'max',diff_total  
+    write(15,*)'counter',counter,'max',diff_total  ,'sum',diffsum_total
 
     call cpu_time(finish)
     time_increment = time_increment + finish-start
@@ -738,11 +740,11 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
 
 
       open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
-      write(15,*)'the file has been opened'
+   !   write(15,*)'the file has been opened'
       write(23,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
-      write(15,*)'the file has been written'
+    !  write(15,*)'the file has been written'
       close(23)
-      write(15,*)'written to file',pid
+     ! write(15,*)'written to file',pid
 
     endif
       
@@ -787,8 +789,8 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
 
     COLS1: do i=1,nmax+1
       ROWS1: do j=1,n2+2
-        row = arr(1,(n2+2)*(nmax+1)-(j-1)-(i-1)*(n2+2)) !get the next item in the sorted list to be processed. 
-        col = arr(2,(n2+2)*(nmax+1)-(j-1)-(i-1)*(n2+2))
+        row = j!arr(1,(n2+2)*(nmax+1)-(j-1)-(i-1)*(n2+2)) !get the next item in the sorted list to be processed. 
+        col = i!arr(2,(n2+2)*(nmax+1)-(j-1)-(i-1)*(n2+2))
 
         if(pid.ne.1 .and. col.le.2)then!.ge.nmax-1)then !Doing the end two columns separately, so skip them here
           CYCLE
@@ -1024,6 +1026,9 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
     diff = abs(hold_read-h_read)   !for thresholding purposes
     maxdiff = 0
     maxdiff = maxval(diff)
+    diffsum = 0
+    diffsum = sum(diff)
+
  
     deallocate(diff)
     deallocate(hz_1D)
@@ -1033,10 +1038,14 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
   endif
 
   call MPI_ALLREDUCE(maxdiff,diff_total,1,MPI_REAL,mpi_max,MPI_COMM_WORLD,ierr)  !to get overall threshold
+  call MPI_ALLREDUCE(diffsum,diffsum_total,1,MPI_REAL,mpi_sum,MPI_COMM_WORLD,ierr)  !to get overall threshold
 
+
+  thresh_mean = thresh_mean + diff_total
   if(mod(counter,10).eq.0)then
 
-    threshold_array(my_current_diff) = diff_total
+    threshold_array(my_current_diff) = thresh_mean/10
+    thresh_mean = 0
 
     my_current_diff = my_current_diff + 1
     if(my_current_diff == 2001) then
@@ -1165,20 +1174,20 @@ if (pid .eq. 0) then
   write(15,*)'done'
    
   open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
-  write(15,*)'the file has been opened'
+!  write(15,*)'the file has been opened'
   write(23,rec=1)((hz_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
-  write(15,*)'the file has been written'
+ ! write(15,*)'the file has been written'
   close(23)
-  write(15,*)'written to file',pid
+  !write(15,*)'written to file',pid
 
 
    
   open(25,file = waterfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
-  write(15,*)'the file has been opened'
+ ! write(15,*)'the file has been opened'
   write(25,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
-  write(15,*)'the file has been written'
+  !write(15,*)'the file has been written'
   close(25)
-  write(15,*)'written to file',pid
+ ! write(15,*)'written to file',pid
 
 
 

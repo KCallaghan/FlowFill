@@ -9,9 +9,11 @@ This code may only work on UNIX-based systems.
 Please contact us if you have questions or suggestions! 
 
 ## Required data inputs
-The only required data file is topography in a .nc (NetCDF) format. The filename, number of rows and columns in the file, runoff depth, and threshold value (see readme) are specified at runtime. The NetCDF file should have three variables: 'lat' for latitude, 'lon' for longitude, and 'value' for elevation.
+The only required data file is topography in a .nc (NetCDF) format. The NetCDF file should have three variables: 'lat' for latitude, 'lon' for longitude, and 'value' for elevation.
 
 Actual latitude and longitude are not required: define any rectangular grid. Note that this algorithm does not internally account for changing cell size in a geographic coordinate system. 
+
+The filename, number of rows and columns in the file, runoff depth, and threshold value are specified at runtime. The threshold value is used to allow FlowFill to exit and save outputs once further computation will not make a significant difference to outputs. Appropriate values vary depending on the landscape used. We recommend running FlowFill with a very small threshold value and a small runoff amount and plotting the maximum amount of water moving per iteration (h_max) (FlowFill saves this to a text file) to aid in selection of the threshold. The threshold value represents the amount by which h_max should be allowed to vary from one iteration to the next. A distinctive plateau in h_max values is generally seen at the point where the threshold should be invoked.
 
 
 ## Compilation

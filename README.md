@@ -9,7 +9,7 @@ This code may only work on UNIX-based systems.
 Please contact us if you have questions or suggestions! 
 
 ## Required data inputs
-The only required data file is topography in a .nc (NetCDF) format. The filename is specified at runtime. The NetCDF file should have three variables: 'lat' for latitude, 'lon' for longitude, and 'value' for elevation.
+The only required data file is topography in a .nc (NetCDF) format. The filename, number of rows and columns in the file, runoff depth, and threshold value (see readme) are specified at runtime. The NetCDF file should have three variables: 'lat' for latitude, 'lon' for longitude, and 'value' for elevation.
 
 Actual latitude and longitude are not required: define any rectangular grid. Note that this algorithm does not internally account for changing cell size in a geographic coordinate system. 
 
@@ -33,10 +33,10 @@ This code will run in parallel and requires a minimum of 3 processors.
 
 Runoff and the topography file need to be specified at runtime. Note that these must be specified in the correct order, first runoff and then the topography file.
 
-An example of how to run this code with 1 m runoff, an input topography file called topo.nc, and using 4 processors is:
+An example of how to run this code with 1 m runoff, an input topography file called topo.nc with dimensions 500 rows by 600 columns, a threshold value of 0.001, an output file prefix of my_outfile, and using 4 processors is:
 
 ```
- mpirun -np 4 ./Your_compiled_code  1 topo.nc
+ mpirun -np 4 ./Your_compiled_code  1 topo.nc 600 500 0.001 my_outfile
  ```
  
 ## Outputs

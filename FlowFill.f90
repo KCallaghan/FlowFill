@@ -114,19 +114,37 @@ subroutine check_err(statusnc)
 end subroutine check_err
 
 
+subroutine init_random_seed()
+  integer :: i, n, clock
+  integer, dimension(:), allocatable :: seed
+         
+  call RANDOM_SEED(size = n)
+  allocate(seed(n))
+         
+  call SYSTEM_CLOCK(COUNT=clock)
+          
+  seed = clock + 37 * (/ (i - 1, i = 1, n) /)
+  call RANDOM_SEED(PUT = seed)
+          
+  deallocate(seed)
+end subroutine
+
 !********************************************************************************************************
 
 !get steepest slope direction subroutine:
 !This subroutine takes the elevation of the current cell and of its 8 neighbours and returns
 !the steepest downslope direction for water to flow. In the case of a tie, water moves preferentially
 !NW, W, SW, S, SE, E, NE, then N. 
-
-subroutine steepest(x,y,my_val,N_val,NE_val,E_val,SE_val,S_val,SW_val,W_val,NW_val,target_cell)
+subroutine steepest(x,y,my_val,N_val,NE_val,E_val,SE_val,S_val,SW_val,W_val,NW_val,target_cell,treat_ties)
 
   integer, intent(in)           :: x,y
-  integer                       :: target_cell(2)
+  integer                       :: ties,random_int
+  integer                       :: target_cell(2),cell_num(8)
   real   , intent(in)           :: my_val,N_val,S_val,E_val,W_val, NE_val, SE_val,NW_val,SW_val
+  real                          :: random
   real,allocatable,dimension(:) :: direction_array, x_array, y_array
+  character(len=10) ,intent(in) :: treat_ties
+
 
   allocate(direction_array(8))
   direction_array(:) = my_val
@@ -168,19 +186,40 @@ subroutine steepest(x,y,my_val,N_val,NE_val,E_val,SE_val,S_val,SW_val,W_val,NW_v
     return
   endif
 
+  ties = 0 !There are no ties yet, we will check below if there are
   !There is a downslope direction, so we assign the location of the steepest slope to target_cell.
   do n= 1,8
     if(max(direction_array(1),direction_array(2),direction_array(3),&
       direction_array(4),direction_array(5),direction_array(6),direction_array(7),&
       direction_array(8)) .eq. direction_array(n)) then
+      ties = ties + 1 !Add to ties so we can see if there was a unique cell with that value, or multiples
+      cell_num(ties) = n
       target_cell(1) = x_array(n)
       target_cell(2) = y_array(n)
     endif
   end do 
 
+  !Check for ties and switch to a random direction if these exist:
+
+  if(treat_ties == 'RAND')then
+  if(ties .gt. 1) then
+    CALL init_random_seed()         
+    CALL RANDOM_NUMBER(random)
+    random_int = FLOOR(ties*random) + 1  !e.g. if ties = 3, we will get a number 1, 2 or 3, which correspond to the first 3 positions in cell_num
+    target_cell(1) = x_array(cell_num(random_int))
+    target_cell(2) = y_array(cell_num(random_int))
+  endif
+  endif
+
+
+
+
   return
 
 end subroutine steepest
+
+
+
 
 
 
@@ -203,10 +242,10 @@ real :: diff_total,maxdiff,water,water_threshold,depression_threshold,starting_w
 real :: total_adjust,max_adjust,diffsum,diffsum_total, thresh_mean,user_selected_threshold
 real :: hz_me,hz_N,hz_S,hz_W,hz_E,hz_NE,hz_NW,hz_SW,hz_SE,h_N,h_S,h_W,h_E,h_NE,h_NW,h_SW,h_SE
 
-character*100 :: filetopo,output_string,outfile,waterfile,textfile
+character*100 :: filetopo,output_string,outfile,waterfile,textfile,bool_runoff,runoff_file
 
 real,allocatable,dimension(:,:) :: topo,diff,topo_read,h_values,&
-hz_read,h_read,hold_read,arr,topo_import,add,hz_values
+hz_read,h_read,hold_read,arr,topo_import,add,hz_values,runoff_import
 
 real,allocatable,dimension(:) :: hz_1D,threshold_array
 
@@ -218,6 +257,8 @@ integer,allocatable :: domblock(:),domblocksmall(:),nini(:),nend(:)
 
 integer::narg,cptArg !#of arg & counter of arg
 character(len=100)::name,my_name !Arg name
+character(len=10)::treat_ties
+
 
 logical ::supplied_runoff=.false.,supplied_file=.false.,ready_to_exit=.false.
 
@@ -272,6 +313,15 @@ end if
         outfile = trim(adjustl(name))//'.dat'
         waterfile = trim(adjustl(name))//'_water.dat'
         textfile = trim(adjustl(name))//'_text_output.txt'
+
+      elseif(cptArg==7)then
+        bool_runoff = adjustl(name)
+
+      elseif(cptArg==8)then
+        runoff_file = adjustl(name)
+
+      elseif(cptArg==9)then
+        treat_ties = adjustl(name)
       
       endif
 
@@ -389,6 +439,53 @@ if(pid.eq.0) then
   allocate(topo(n2+2,n3+2))
   allocate(h_values(n2+2,n3+2))
   h_values(:,:) = starting_water
+
+  if(bool_runoff .eq. "Y")then
+    allocate(runoff_import(n2,n3))
+     
+    iret = nf90_open(runoff_file,0,ncid) !reading in the topo
+    call check_err(iret)
+
+    iret = nf90_inq_varid(ncid,'value',varid)
+    call check_err(iret)
+
+    iret = nf90_get_var(ncid,varid,runoff_import)
+    call check_err(iret)
+
+    iret = nf90_close(ncid)
+    call check_err(iret)
+
+    do i = 1,n2+2   !add the border around the domain to allow processing to happen in inland regions (allow water to flow off the topography). 
+    do j = 1,n3+2
+      if(i.eq.1)then
+        if(j.eq.1)then 
+          h_values(i,j) = runoff_import(i,j) 
+        elseif(j.eq.n3+2) then
+          h_values(i,j) = runoff_import(i,j-2)
+        else
+          h_values(i,j)= runoff_import(i,j-1)  !leftmost column
+        endif 
+
+      elseif(i.eq.n2+2)then 
+        if(j.eq.1)then 
+          h_values(i,j) = runoff_import(i-2,j) 
+        elseif(j.eq.n3+2) then
+          h_values(i,j) = runoff_import(i-2,j-2)
+        else
+          h_values(i,j) = runoff_import(i-2,j-1) !rightmost column 
+        endif 
+      
+      elseif(j.eq.1) then  
+        h_values(i,j)= runoff_import(i-1,j) !top row
+      elseif(j.eq.n3+2)then 
+        h_values(i,j)= runoff_import(i-1,j-2) !bottom row
+      else
+        h_values(i,j) = runoff_import(i-1,j-1)
+      endif
+    end do 
+    end do 
+
+  endif
 
 !Water in cells at the edge of the domain may flow into or out of the domain. We do not want it to indiscriminately
 !flow out if it may be able to flow inwards, so we add a one-cell border with the same elevation as the current
@@ -511,7 +608,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
       end do
 
       open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
-      write(23,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
+      write(23)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
       close(23)
     endif
    diff_total = 0
@@ -547,7 +644,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
           call steepest(row,col,hz_read(row,col),hz_read(row-1,col),&
              hz_read(row-1,col+1),hz_read(row,col+1),hz_read(row+1,col+1),&
              hz_read(row+1,col),hz_read(row+1,col-1),hz_read(row,col-1),&
-             hz_read(row-1,col-1),target_cell)
+             hz_read(row-1,col-1),target_cell,treat_ties)
 
           if(target_cell(1).eq.-100)then     !there is no downslope cell            
             CYCLE
@@ -632,7 +729,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
            call steepest(row,col,hz_read(row,col),hz_read(row-1,col),&
              hz_read(row-1,col+1),hz_read(row,col+1),hz_read(row+1,col+1),&
              hz_read(row+1,col),hz_read(row+1,col-1),hz_read(row,col-1),&
-             hz_read(row-1,col-1),target_cell)
+             hz_read(row-1,col-1),target_cell,treat_ties)
 
             if(target_cell(1).eq.-100)then
               CYCLE
@@ -869,11 +966,11 @@ if (pid .eq. 0) then
   write(15,*)'done'
    
   open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
-  write(23,rec=1)((hz_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
+  write(23)((hz_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
   close(23)
 
   open(25,file = waterfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
-  write(25,rec=1)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
+  write(25)((h_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
   close(25)
 
 endif

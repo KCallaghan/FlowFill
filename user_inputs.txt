@@ -1,0 +1,11 @@
+Number of processors (integer value, 3 or larger): 4
+Name of compiled file to run: test
+Name of topography input file: Sangamon_15_m.nc
+Columns (integer): 600
+Rows (integer): 497
+Threshold value: 0.001
+Output file prefix: my_outfile
+Are you including a variable runoff file (Y/N): N
+If N, Runoff (m) (set to 0 if Y): 1
+If Y, name of variable runoff file (set to NONE if N): runoff.nc
+Should ties be treated by selecting a preferential direction (PREF) or a random direction (RAND): PREF

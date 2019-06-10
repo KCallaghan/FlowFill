@@ -33,13 +33,20 @@ To use this compilation code on your computer, change the following to the appro
 
 This code will run in parallel and requires a minimum of 3 processors.
 
-Runoff and the topography file need to be specified at runtime. Note that these must be specified in the correct order, first runoff and then the topography file.
+Runoff and the topography file need to be specified at runtime, as well as the other user-selected variables. The easiest way to run FlowFill is to download the 'user_inputs.txt' file and change that values in that file as needed; download the 'run_me.sh' file and use this to run the code. 
 
-An example of how to run this code with 1 m runoff, an input topography file called topo.nc with dimensions 500 rows by 600 columns, a threshold value of 0.001, an output file prefix of my_outfile, and using 4 processors is:
-
-```
- mpirun -np 4 ./Your_compiled_code  1 topo.nc 600 500 0.001 my_outfile
- ```
+The values that are specified in the 'user_inputs.txt' file are as follows:
+1) Number of processors (integer value, 3 or larger). This will depend on how many processors you have available on your system and wish to dedicate to FlowFill. 
+2) Name of compiled file to run, as specified in the compilation step above
+3) Name of topography input file, in netcdf format
+4) Columns in the topography input file
+5) Rows in the topography input file
+6) Threshold value - a small value that indicates when the code should stop running and equilibrium has been reached. The appropriate value varies on different input topographies. The threshold value indicates the amount of change in the maximum amount of water moving across the landscape from one iteration to the next. For example graphs on how this threshold visually appears, see the FlowFill paper. There is a distinct plateau in the maximum water moving that indicates what the appropriate threshold value shoule be. The threshold value is best selected by firstly choosing a very small value and running the code until the point where the amount of water moving from one iteration to the next has all but stopped. Use this information to select a more appropriate threshold for future runs of FlowFill on this topogrphy.
+7) Output file prefix
+8) Are you including a variable runoff file (Y/N) (as opposed to selecting a single contant value for runoff across the whole domain)
+9) If N, Runoff (m)
+10) If Y, name of variable runoff file 
+11) Should ties be treated by selecting a preferential direction (PREF) or a random direction (RAND). Note that selecting RAND will reduce any biases introduced by ties, but will make the result non-deterministic (results may be different when performing multiple model runs). 
  
 ## Outputs
 

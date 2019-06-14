@@ -15,12 +15,14 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-!This version of FlowFill is for the runs with a constant value of runoff everywhere in the domain. 
-!It is possible to use variable runoff, allow infiltration, evaporation, etc, and these may be added at a later stage if there is a need for them. 
+!This version of FlowFill allows the user to select whether they would like to use a constant runoff everywhere in the domain, or to use variable runoff.
+!It is possible to allow infiltration, evaporation, etc, and these may be added at a later stage if there is a need for them. 
 !This version of the code does not sort cells by priority before moving water, but simply iterates through the array left to right. With current coding and D8 
 !direction selection, this was found to be faster as the time taken by a sort was longer than any gain in processing higher cells first. 
 !It is paralellised using MPI. Note that a minimum of 3 processors should be used. 
-!The only required input data is topography in a netcdf format. Other input values are required for starting runoff depth, x and y dimensions of your input DEM, and thresholding value.
+!The only required input data is topography in a netcdf format. A runoff netcdf is optional.
+!Other input values are required for starting runoff depth, x and y dimensions of your input DEM, number of processors to use, selection of method to use for ties, and thresholding value.
+!We recommend using the supplied user_inputs and run_me files to make selection of these input values and running of the code easy. 
 !This is intended for smaller study areas, so NO wraparound of water E-W or N-S is needed (as one would use for global modelling)! 
 
 !Code outline:

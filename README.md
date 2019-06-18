@@ -4,9 +4,13 @@
 
 This algorithm is intended for pre-processing DEMs prior to running flow routing algorithms. Rather than indiscriminately filling all depressions, a starting runoff value is specified and depressions are fully or partially filled in a way that conserves water mass. Terrestrial water storage can also be assessed. 
 
+When using FlowFill, please cite:
+
+**Callaghan, K. L,. and A. D. Wickert (2019), [Computing water flow through complex landscapes, Part 1: Incorporating depressions in flow routing using FlowFill](https://www.earth-surf-dynam-discuss.net/esurf-2019-11/), *Earth Surf. Dynam. Discuss.*, doi:10.5194/esurf-2019-11.**
+
 This code may only work on UNIX-based systems. 
 
-Please contact us if you have questions or suggestions! 
+Please contact us if you have questions or suggestions!
 
 ## Required data inputs
 The only required data file is topography in a .nc (NetCDF) format. The NetCDF file should have three variables: 'lat' for latitude, 'lon' for longitude, and 'value' for elevation.
@@ -15,6 +19,18 @@ Actual latitude and longitude are not required: define any rectangular grid. Not
 
 The filename, number of rows and columns in the file, runoff depth, and threshold value are specified at runtime. The threshold value is used to allow FlowFill to exit and save outputs once further computation will not make a significant difference to outputs. Appropriate values vary depending on the landscape used. We recommend running FlowFill with a very small threshold value and a small runoff amount and plotting the maximum amount of water moving per iteration (h_max) (FlowFill saves this to a text file) to aid in selection of the threshold. The threshold value represents the amount by which h_max should be allowed to vary from one iteration to the next. A distinctive plateau in h_max values is generally seen at the point where the threshold should be invoked.
 
+## Dependencies
+
+* The GNU Fortran compiler
+* Open MPI
+* NetCDF for Fortran
+
+Install these on Ubuntu Linux using:
+```
+sudo apt install libopenmpi-dev
+sudo apt install libnetcdff-dev
+sudo apt install gfortran
+```
 
 ## Compilation
 

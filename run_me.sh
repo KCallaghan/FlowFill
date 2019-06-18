@@ -42,7 +42,11 @@ done < "$input"
 
 
 date > temp_check_startendtimes_$x.txt
-mpirun -np $processors ./$runfile $runoff $topofile $rows $cols $threshold $outfile $runoff_bool $runoff_file $ties
+echo 
+echo FlowFill Command:
+echo "mpirun -np $processors ./$runfile $runoff $topofile $cols $rows $threshold $outfile $runoff_bool $runoff_file $ties"
+echo
+mpirun -np $processors ./$runfile $runoff $topofile $cols $rows $threshold $outfile $runoff_bool $runoff_file $ties
 date >> temp_check_startendtimes_$x.txt
 
 

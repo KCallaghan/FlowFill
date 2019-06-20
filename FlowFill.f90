@@ -56,7 +56,7 @@ subroutine dividedomain(n2,n3,numtasks,nini,filemask,ntotal)
 
   allocate(varread(n2,n3))
 
-  write(6,*)'reading in the mask to divide the domain'
+  write(6,*)'Reading in the raster map and dividing the domain among processors'
 
   iret = nf90_open(filemask,0,ncid)  !open the mask file
   call check_err(iret)
@@ -349,10 +349,7 @@ counter    = 0
 my_current_diff = 1
 thresh_mean = 0
 
-
 write(15,*) 'filetopo ',filetopo 
-print *, 'filetopo ',filetopo 
-print *,'your chosen threshold was',user_selected_threshold
 
 !MPI SETUP AND BEHIND-THE-SCENES: ****************************************************************************************************************
 
@@ -376,7 +373,11 @@ call MPI_Type_commit(tasktype,ierr)
 !The D8 flow of water works by passing edge columns between processors each 
 !iteration and processing these separately.
 
-if(pid .eq. 0) then
+if (pid .eq. 0) then
+  print *,''
+  print *,'Beginning FlowFill.'
+  print *,'Convergence threshold: ',user_selected_threshold
+  print *,'Topography file: ',filetopo 
   call dividedomain(n2,n3,numtasks,nini,filetopo,ntotal) !Divides up the work equally among all of the ranks, by number of defined land cells.
   
   nend(numtasks-1) = n3+2 !define where each task must finish
@@ -591,6 +592,7 @@ MAIN: do while(converged .eq. 0)           !Main loop for moving water
       end do
       if(ready_to_exit .eqv. .true.)then
         print *,'checking if ready_to_exit',ready_to_exit,pid
+        print *,diff_total,starting_water
         if(diff_total < starting_water)then                                        !The max water moving must at least be less than the initial runoff supplied to be allowed to exit.
           print *,'exiting the main loop',diff_total
           converged = 1
@@ -967,7 +969,9 @@ write(15,*)'this is the final nmax',nmax
 
 
 if (pid .eq. 0) then
-  write(15,*)'done'
+  write(15,*)'FlowFill Complete.'
+  print *,'FlowFill Complete.'
+  print *,''
    
   open(23,file = outfile,form='unformatted',access='stream')!access='direct',recl=n2*n3)!access='stream')!do the final write - create the file
   write(23)((hz_values(i,j),i=1,n2+2),j=1,n3+2) !and write it to file
@@ -981,8 +985,14 @@ endif
 
 call MPI_FINALIZE(ierr)
 
-print *,'finished',pid
-write (15,*)'finished',pid
+print *,'Process ',pid,' complete.'
+write (15,*)'Process ',pid,' complete.'
+
+if (pid .eq. 0) then
+  print *,''
+  print *,'Output file written. FlowFill finalized.'
+  print *,''
+endif
 
 end program surface_water
 

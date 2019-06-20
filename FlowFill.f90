@@ -554,6 +554,8 @@ if(pid.eq.0)then
   allocate(hz_values(n2+2,n3+2)) !to save the final data later on
   diffsum_total = 0
   diff_total = 0
+  maxdiff = 0
+  diffsum = 0
 else
   nmax = nend(pid) - nini(pid) +3  
   allocate(diff(n2+2,nmax+1))

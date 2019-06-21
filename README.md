@@ -8,7 +8,7 @@ When using FlowFill, please cite:
 
 **Callaghan, K. L,. and A. D. Wickert (2019), [Computing water flow through complex landscapes, Part 1: Incorporating depressions in flow routing using FlowFill](https://www.earth-surf-dynam-discuss.net/esurf-2019-11/), *Earth Surf. Dynam. Discuss.*, doi:10.5194/esurf-2019-11.**
 
-This code may only work on UNIX-based systems. 
+This code may only work on UNIX-based systems. GRASS GIS users may be interested in the r.flowfill extension, available at https://github.com/OSGeo/grass-addons/tree/master/grass7/raster/r.flowfill.
 
 Please contact us if you have questions or suggestions!
 

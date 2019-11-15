@@ -1,6 +1,6 @@
 Number of processors (integer value, 3 or larger): 4
-Name of compiled file to run: test
-Name of topography input file: Sangamon_15_m.nc
+Name of compiled file to run: compiled_file
+Name of topography input file: input_file.nc
 Columns (integer): 497
 Rows (integer): 600
 Threshold value: 0.001
